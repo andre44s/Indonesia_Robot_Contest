@@ -5,11 +5,11 @@ boolean parsing = false;
 boolean receive = false;
 
 //Motor
-const int mpwm = PA8; // Pin PWM
-const int mtr1 = PB3; // Pin Motor 1
-const int mtr2 = PB4; // Pin Motor 2
-const int switchA = PB6; //Pin Encoder
-const int switchB = PB7; //Pin Encoder
+const int mpwm = PB1; // Pin PWM
+const int mtr1 = PB12; // Pin Motor 1
+const int mtr2 = PB13; // Pin Motor 2
+const int switchA = PB14; //Pin Encoder
+const int switchB = PB15; //Pin Encoder
 int stateA = 0;
 int stateB = 0;
 int setRPM1;
@@ -21,19 +21,15 @@ unsigned long interval = 100; //Satuan Waktu untuk revolution1
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(115200);
+  Serial2.begin(115200);
 
+  pinMode(mtr1, OUTPUT);
+  pinMode(mtr2, OUTPUT);
   pinMode(switchA, INPUT_PULLUP);    //Pin Encoder Motor 1
   pinMode(switchB, INPUT_PULLUP);    //Pin Encoder Motor 1
   pinMode(mpwm, PWM);
-  pinMode(mtr1, OUTPUT);
-  pinMode(mtr2, OUTPUT);
 
   previousMillis = millis();
-
-  pwmWrite(mpwm, 0);
-  digitalWrite(mtr1, LOW);
-  digitalWrite(mtr2, LOW);
 }
 
 void loop() {
@@ -57,17 +53,20 @@ void loop() {
 }
 
 void runMotor() {
-  pwmWrite(mpwm, setRPM1 * 256);
   if (setRPM1 > 0) {
     //CounterClockWise
+    pwmWrite(mpwm, 45000);
     digitalWrite(mtr1, HIGH);
     digitalWrite(mtr2, LOW);
+    Serial.println("Up");
   }
 
   if (setRPM1 < 0) {
     //ClockWise
+    pwmWrite(mpwm, 45000);
     digitalWrite(mtr1, LOW);
     digitalWrite(mtr2, HIGH);
+    Serial.println("Down");
   }
 
   if (setRPM1 == 0) {
@@ -79,8 +78,8 @@ void runMotor() {
 }
 
 void cekData() {
-  while (Serial1.available() > 0) {
-    char inChar = (char)Serial1.read();
+  while (Serial2.available() > 0) {
+    char inChar = (char)Serial2.read();
     if (inChar == '*') {
       dataIn = "";
       receive = true;
