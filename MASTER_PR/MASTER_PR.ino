@@ -25,9 +25,9 @@ int dataServo7 = 30;
 int dataServo8 = 30;
 
 int defaultXO = 0;
-int defaultXC = 70;
+int defaultXC = 100;
 int default3O = 0;
-int default3C = 120;
+int default3C = 100;
 
 int stateLengan = 0;
 int dataLengan = 0;
@@ -275,10 +275,10 @@ void bacaRemote() {
     millisButton = millis();
   }
   if (stateLengan) {
-    dataLengan = -256;
+    dataLengan = -100;
   }
   else {
-    dataLengan = 150;
+    dataLengan = 100;
   }
 
 
