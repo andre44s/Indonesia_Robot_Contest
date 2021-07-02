@@ -9,6 +9,7 @@ boolean receive = false;
 int servo1Pin = PA0;
 int servo2Pin = PA1;
 int servo3Pin = PA2;
+
 int servo4Pin = PA6;
 int servo5Pin = PA7;
 
@@ -16,7 +17,9 @@ int servo6Pin = PA3;
 int servo7Pin = PB1;
 int servo8Pin = PB0;
 
-int servo15Degree = 0;
+int servo13Degree = 0;
+int servo4Degree = 0;
+int servo5Degree = 0;
 int servo6Degree = 0;
 int servo7Degree = 0;
 int servo8Degree = 0;
@@ -48,16 +51,20 @@ void loop() {
   cekData();
   cekDataSerial();
 
-  Servo1.write(servo15Degree);
-  Servo2.write(servo15Degree);
-  Servo3.write(servo15Degree);
-  Servo4.write(servo15Degree);
-  Servo5.write(servo15Degree);
+  Servo1.write(servo13Degree);
+  Servo2.write(servo13Degree);
+  Servo3.write(servo13Degree);
+  Servo4.write(servo4Degree);
+  Servo5.write(servo5Degree);
   Servo6.write(servo6Degree);
   Servo7.write(servo7Degree);
   Servo8.write(servo8Degree);
 
-  Serial.print(servo15Degree);
+  Serial.print(servo13Degree);
+  Serial.print("  ");
+  Serial.print(servo4Degree);
+  Serial.print("  ");
+  Serial.print(servo5Degree);
   Serial.print("  ");
   Serial.print(servo6Degree);
   Serial.print("  ");
@@ -125,8 +132,10 @@ void parsingData() {
       arrayData[j] = arrayData[j] + dataIn[i];
     }
   }
-  servo15Degree = arrayData[0].toFloat();
-  servo6Degree = arrayData[1].toFloat();
-  servo7Degree = arrayData[2].toFloat();
-  servo8Degree = arrayData[3].toFloat();
+  servo13Degree = arrayData[0].toFloat();
+  servo4Degree = arrayData[1].toFloat();
+  servo5Degree = arrayData[2].toFloat();
+  servo6Degree = arrayData[3].toFloat();
+  servo7Degree = arrayData[4].toFloat();
+  servo8Degree = arrayData[5].toFloat();
 }
