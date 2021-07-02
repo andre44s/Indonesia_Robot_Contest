@@ -14,15 +14,18 @@ int rpm_x, rpm_y, rotateSpeed;
 int rpm_1, rpm_2, rpm_3, rpm_4;
 int max_rpm = 100;
 
-int stateServo15  = false;
+int stateServo13  = false;
+int stateServo45  = false;
 int stateServo6  = false;
 int stateServo7 = false;
 int stateServo8 = false;
 
-int dataServo15 = 30;
-int dataServo6 = 30;
-int dataServo7 = 30;
-int dataServo8 = 30;
+int dataServo13 = 0;
+int dataServo4 = 0;
+int dataServo5 = 0;
+int dataServo6 = 0;
+int dataServo7 = 0;
+int dataServo8 = 0;
 
 int defaultXO = 0;
 int defaultXC = 100;
@@ -228,18 +231,18 @@ void bacaRemote() {
     dataServo8 = default3C;
   }
 
-  //Servo 1 - 5
+  //Servo 1 - 3
   if (data.XButton && currentMillis - millisButton >= 200) {
     Serial.println("X is pushed");
-    stateServo15 = !stateServo15;
+    stateServo13 = !stateServo13;
     millisButton = millis();
   }
 
-  if (stateServo15) {
-    dataServo15 = defaultXO;
+  if (stateServo13) {
+    dataServo13 = defaultXO;
   }
   else {
-    dataServo15 = defaultXC;
+    dataServo13 = defaultXC;
   }
 
   if (data.UButton) {
@@ -278,7 +281,7 @@ void bacaRemote() {
     dataLengan = -100;
   }
   else {
-    dataLengan = 100;
+    dataLengan = 200;
   }
 
 
@@ -299,6 +302,21 @@ void bacaRemote() {
   }
   if (data.R3) {
     Serial.println("R3 is pushed");
+  }
+
+  if (data.R3 && currentMillis - millisButton >= 500) {
+    Serial.println("R3 is pushed");
+    stateServo45 = !stateServo45;
+    millisButton = millis();
+  }
+
+  if (stateServo45) {
+    dataServo4 = 0;
+    dataServo5 = 110;
+  }
+  else {
+    dataServo4 = 60;
+    dataServo5 = 70;
   }
 }
 
@@ -365,7 +383,11 @@ void sendData() {
 
 void sendSlave() {
   Serial3.print("*");
-  Serial3.print(dataServo15);
+  Serial3.print(dataServo13);
+  Serial3.print(",");
+  Serial3.print(dataServo4);
+  Serial3.print(",");
+  Serial3.print(dataServo5);
   Serial3.print(",");
   Serial3.print(dataServo6);
   Serial3.print(",");
@@ -451,9 +473,11 @@ void parsingDataTeta() {
 }
 
 void printSpeed() {
-  Serial.print(dataLengan);
+  Serial.print(dataServo13);
   Serial.print(" ");
-  Serial.print(dataServo15);
+  Serial.print(dataServo4);
+  Serial.print(" ");
+  Serial.print(dataServo5);
   Serial.print(" ");
   Serial.print(dataServo6);
   Serial.print(" ");
