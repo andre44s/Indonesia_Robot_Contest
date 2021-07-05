@@ -5,7 +5,7 @@
 #include <Servo.h>
 
 RF24 radio(A10, A11);   // nRF24L01 (CE, CSN)
-const byte address[6] = "101010";
+const byte address[6] = "111111";
 
 //Variable Motor
 int rpm_x, rpm_y, rotateSpeed;
@@ -32,14 +32,6 @@ struct Data_Package {
   byte R1;
   byte R2;
   byte R3;
-  byte state1;
-  byte state2;
-  byte state3;
-  byte state4;
-  byte state5;
-  byte state6;
-  byte state7;
-  byte state8;
 };
 Data_Package data; //Create a variable with the above structure
 
@@ -59,38 +51,44 @@ float KpT = 10;    //Kp
 float KiT = 0;    //Ki
 float KdT = 15;      //Kd
 
-int servo1Pin = 10;
-int servo2Pin = 11;
-int servo3Pin = 12;
-int servo4Pin = 13;
-int servo5Pin = A4;
-
+int servo1Pin = A4;
 Servo Servo1;
-Servo Servo2;
-Servo Servo3;
-Servo Servo4;
-Servo Servo5;
 
 int relay1 = A0;
 int relay2 = A1;
 int relay3 = A2;
-int relay4 = A3;
+
+int limit1 = 6;
+int limit2 = 7;
+
+int stateRelay1 = 0;
+int stateRelay2 = 0;
+int stateRelay3 = 0;
+
+int stateServo1 = 0;
+int stateMotor1 = 0;
+
+int stateLimit1 = 0;
+int stateLimit2 = 0;
+
+int dataLengan = 0;
+
+long long millisButton = 0, currentMillis = 0, previousMillis = 0;
 
 void setup() {
   Serial.begin(115200);
   Serial1.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 1
   Serial2.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 2
+  Serial3.begin(115200);
 
   Servo1.attach(servo1Pin);
-  Servo2.attach(servo2Pin);
-  Servo3.attach(servo3Pin);
-  Servo4.attach(servo4Pin);
-  Servo5.attach(servo5Pin);
 
   pinMode(relay1, OUTPUT);
   pinMode(relay2, OUTPUT);
   pinMode(relay3, OUTPUT);
-  pinMode(relay4, OUTPUT);
+
+  pinMode(limit1, INPUT_PULLUP);
+  pinMode(limit2, INPUT_PULLUP);
 
   radio.begin();
   radio.openReadingPipe(0, address);
@@ -100,16 +98,13 @@ void setup() {
   radio.startListening(); //  Set the module as receiver
   resetData();
 
-  Servo1.write(30);
-  Servo2.write(30);
-  Servo3.write(30);
-  Servo4.write(30);
-  Servo5.write(30);
+  previousMillis = millis();
 
-  digitalWrite(relay1,HIGH);
-  digitalWrite(relay2,HIGH);
-  digitalWrite(relay3,HIGH);
-  digitalWrite(relay4,HIGH);
+  Servo1.write(0);
+
+  digitalWrite(relay1, HIGH);
+  digitalWrite(relay2, HIGH);
+  digitalWrite(relay3, HIGH);
 }
 
 void loop() {
@@ -118,14 +113,24 @@ void loop() {
     radio.read(&data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure
   }
 
+  currentMillis = millis();
+  if (currentMillis - previousMillis > 100) {
+    previousMillis = currentMillis;
+    //sendDataMotor();
+    printSpeed();
+  }
+
   cekDataGyro();
   PIDTeta();
-  printSpeed();
+
+  stateLimit1 = digitalRead(limit1);
+  stateLimit2 = digitalRead(limit2);
 
   bacaRemote();
   rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / 100;
   rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / 100;
   rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / 200;
+
 }
 
 void bacaRemote() {
@@ -133,14 +138,14 @@ void bacaRemote() {
   if (data.LX != 128 || data.LY != 128 || data.RX != 128) {
     //diagonal
     if ((data.LY != 128 || data.LX != 128) && data.RX == 128) {
-      Serial.print("Move : ");
+      //      Serial.print("Move : ");
       moveMotor();
     }
 
     //putar kiri
     else if (data.LY == 128 && data.LX == 128 && data.RX != 128) {
-      Serial.print("Putar Kiri : ");
-      Serial.println(rotateSpeed);
+      //      Serial.print("Putar Kiri : ");
+      //      Serial.println(rotateSpeed);
       rotateMotor();
       yawTarget = dataGyro;
     }
@@ -153,60 +158,94 @@ void bacaRemote() {
     }
     else {
       stopMotor();
-      Serial.println("Stop");
+      //Serial.println("Stop");
     }
   }
 
   //Input Controller
-  if (data.TButton) {
+  //Triangle
+  if (data.TButton && currentMillis - millisButton >= 200) {
     Serial.println("Triangle is pushed");
-    Servo1.write(30);
-    Servo2.write(30);
-    Servo3.write(30);
-    Servo4.write(30);
-    Servo5.write(30);
+    stateRelay1 = !stateRelay1;
+    millisButton = millis();
   }
-  if (data.SButton) {
-    Serial.println("Square is pushed");
+  if (stateRelay1) {
     digitalWrite(relay1, HIGH);
+    //Serial.println("RELAY 1 ON");
   }
-  if (!data.SButton) {
+  else {
     digitalWrite(relay1, LOW);
+    //Serial.println("RELAY 1 OFF");
   }
-  if (data.CButton) {
+
+  //Square
+  if (data.SButton && currentMillis - millisButton >= 200) {
+    Serial.println("Square is pushed");
+    stateRelay2 = !stateRelay2;
+    millisButton = millis();
+  }
+  if (stateRelay2) {
+    digitalWrite(relay2, HIGH);
+    //Serial.println("RELAY 2 ON");
+  }
+  else {
+    digitalWrite(relay2, LOW);
+    //Serial.println("RELAY 2 OFF");
+  }
+
+  //Circle
+  if (data.CButton && currentMillis - millisButton >= 200) {
     Serial.println("Circle is pushed");
-    Servo1.write(130);
-    Servo2.write(130);
-    Servo3.write(130);
-    Servo4.write(130);
-    Servo5.write(130);
+    stateRelay3 = !stateRelay3;
+    millisButton = millis();
   }
-  if (data.XButton) {
-    Serial.println("X is pushed");
-  }
-  if (data.UButton) {
-    Serial.println("Up Button is pressed");
-    digitalWrite(relay3, LOW);
-  }
-  else{
-    //Serial.println("Up Button is not pressed");
+  if (stateRelay3) {
     digitalWrite(relay3, HIGH);
+    //Serial.println("RELAY 3 ON");
   }
+  else {
+    digitalWrite(relay3, LOW);
+    //Serial.println("RELAY 3 OFF");
+  }
+
+  //Circle
+  if (data.XButton && currentMillis - millisButton >= 200) {
+    Serial.println("Circle is pushed");
+    stateServo1 = !stateServo1;
+    millisButton = millis();
+  }
+  if (stateServo1) {
+    Servo1.write(0);
+    //Serial.println("SERVO 1 ON");
+  }
+  else {
+    Servo1.write(100);
+    //Serial.println("SERVO 1 OFF");
+  }
+
+  if (data.UButton && currentMillis - millisButton >= 200) {
+    //Serial.println("Circle is pushed");
+    stateMotor1 = !stateMotor1;
+    millisButton = millis();
+  }
+  if (stateMotor1 == true && stateLimit1 == HIGH) {
+    dataLengan = 100;
+    //Serial.println("Motor Up");
+  }
+  else if (stateMotor1 == false && stateLimit2 == HIGH) {
+    dataLengan = -100;
+    //Serial.println("Motor Down");
+  }
+  else {
+    dataLengan = 0;
+    //Serial.print("Motor Stop");
+  }
+
   if (data.LButton) {
     Serial.println("Left Button is pressed");
-    digitalWrite(relay4, LOW);
-  }
-  else{
-    //Serial.println("Left Button is not pressed");
-    digitalWrite(relay4, HIGH);
   }
   if (data.RButton) {
     Serial.println("Right Button is pressed");
-    digitalWrite(relay2, LOW);
-  }
-  else{
-    //Serial.println("Right Button is not pressed");
-    digitalWrite(relay2, HIGH);
   }
   if (data.DButton) {
     Serial.println("Down Button is pressed");
@@ -222,10 +261,6 @@ void bacaRemote() {
   }
   if (data.R1) {
     Serial.println("R1 is pushed");
-    digitalWrite(relay1, HIGH);
-  }
-  if (!data.R1) {
-    digitalWrite(relay1, LOW);
   }
   if (data.R2) {
     Serial.println("R2 is pushed");
@@ -255,14 +290,6 @@ void resetData() {
   data.R1 = 0;
   data.R2 = 0;
   data.R3 = 0;
-  data.state1 = 0;
-  data.state2 = 0;
-  data.state3 = 0;
-  data.state4 = 0;
-  data.state5 = 0;
-  data.state6 = 0;
-  data.state7 = 0;
-  data.state8 = 0;
 }
 
 void PIDTeta() {
@@ -300,19 +327,28 @@ void sendData() {
   Serial2.print(",");
   Serial2.print(rpm_3);
   Serial2.print("#");
+  Serial3.print("*");
+  Serial3.print(dataLengan);
+  Serial3.print("#");
+}
+
+void sendDataMotor() {
+  Serial3.print("*");
+  Serial3.print(dataLengan);
+  Serial3.print("#");
 }
 
 void rotateMotor() {
-  rpm_1 = -rotateSpeed;
+  rpm_1 = rotateSpeed;
   rpm_2 = -rotateSpeed;
-  rpm_3 = rotateSpeed;
+  rpm_3 = -rotateSpeed;
   sendData();
 }
 
 void fixMotor() {
-  rpm_1 = -gainValueT * 1.5;
+  rpm_1 = gainValueT * 1.5;
   rpm_2 = -gainValueT * 1.5;
-  rpm_3 = gainValueT * 1.5;
+  rpm_3 = -gainValueT * 1.5;
   sendData();
 }
 
@@ -370,13 +406,11 @@ void parsingDataTeta() {
 }
 
 void printSpeed() {
-  Serial.print(data.LX);
+  Serial.print(data.RX);
   Serial.print(" ");
   Serial.print(data.LY);
   Serial.print(" ");
-  Serial.print(data.RX);
-  Serial.print(" ");
-  Serial.print(data.RY);
+  Serial.print(dataLengan);
   Serial.println(" ");
   Serial.flush();
 }
