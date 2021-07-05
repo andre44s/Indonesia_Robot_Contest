@@ -473,15 +473,11 @@ void parsingDataTeta() {
 }
 
 void printSpeed() {
-  Serial.print(dataServo13);
+  Serial.print(data.LX);
   Serial.print(" ");
-  Serial.print(dataServo4);
+  Serial.print(data.LY);
   Serial.print(" ");
-  Serial.print(dataServo5);
+  Serial.print(data.RX);
   Serial.print(" ");
-  Serial.print(dataServo6);
-  Serial.print(" ");
-  Serial.print(dataServo7);
-  Serial.print(" ");
-  Serial.println(dataServo8);
+  Serial.println(data.RY);
 }
