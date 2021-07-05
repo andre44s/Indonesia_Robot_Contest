@@ -1,4 +1,4 @@
-#include <SPI.h>
+  #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Wire.h>
@@ -6,13 +6,13 @@
 #include <LiquidCrystal_I2C.h>
 
 RF24 radio(7, 8);   // nRF24L01 (CE, CSN)
-const byte address[6] = "101010"; // Address
+const byte address[6] = "111111"; // Address
 
 PS2X ps2x;
 char printBawah[15];
 String clawPrint, kickerPrint, pneuPrint;
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2); //0x27 atau 0x3F
+LiquidCrystal_I2C lcd(0x27, 16, 2); //0x27 atau 0x3F
 char buf[3];
 
 struct Data_Package {
@@ -125,7 +125,7 @@ void loop() {
     Serial.println("Circle");
   }
 
-  data.UButton = ps2x.Button(PSB_PAD_UP);
+  data.UButton = ps2x.ButtonPressed(PSB_PAD_UP);
   if (data.UButton) {
     Serial.println("Up");
   }
