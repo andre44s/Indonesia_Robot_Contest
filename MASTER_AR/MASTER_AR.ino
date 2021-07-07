@@ -79,7 +79,7 @@ void setup() {
   Serial.begin(115200);
   Serial1.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 1
   Serial2.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 2
-  Serial3.begin(115200);
+  Serial3.begin(9600);
 
   Servo1.attach(servo1Pin);
 
@@ -116,7 +116,7 @@ void loop() {
   currentMillis = millis();
   if (currentMillis - previousMillis > 100) {
     previousMillis = currentMillis;
-    //sendDataMotor();
+    sendDataMotor();
     printSpeed();
   }
 
@@ -164,7 +164,7 @@ void bacaRemote() {
 
   //Input Controller
   //Triangle
-  if (data.TButton && currentMillis - millisButton >= 200) {
+  if (data.TButton && currentMillis - millisButton >= 1000) {
     Serial.println("Triangle is pushed");
     stateRelay1 = !stateRelay1;
     millisButton = millis();
@@ -179,7 +179,7 @@ void bacaRemote() {
   }
 
   //Square
-  if (data.SButton && currentMillis - millisButton >= 200) {
+  if (data.SButton && currentMillis - millisButton >= 1000) {
     Serial.println("Square is pushed");
     stateRelay2 = !stateRelay2;
     millisButton = millis();
@@ -194,7 +194,7 @@ void bacaRemote() {
   }
 
   //Circle
-  if (data.CButton && currentMillis - millisButton >= 200) {
+  if (data.CButton && currentMillis - millisButton >= 1000) {
     Serial.println("Circle is pushed");
     stateRelay3 = !stateRelay3;
     millisButton = millis();
@@ -209,7 +209,7 @@ void bacaRemote() {
   }
 
   //Circle
-  if (data.XButton && currentMillis - millisButton >= 200) {
+  if (data.XButton && currentMillis - millisButton >= 1000) {
     Serial.println("Circle is pushed");
     stateServo1 = !stateServo1;
     millisButton = millis();
@@ -223,17 +223,17 @@ void bacaRemote() {
     //Serial.println("SERVO 1 OFF");
   }
 
-  if (data.UButton && currentMillis - millisButton >= 200) {
+  if (data.UButton && currentMillis - millisButton >= 1000) {
     //Serial.println("Circle is pushed");
     stateMotor1 = !stateMotor1;
     millisButton = millis();
   }
-  if (stateMotor1 == true && stateLimit1 == HIGH) {
-    dataLengan = 100;
+  if (stateMotor1 == true && stateLimit2 == HIGH) {
+    dataLengan = 50;
     //Serial.println("Motor Up");
   }
-  else if (stateMotor1 == false && stateLimit2 == HIGH) {
-    dataLengan = -100;
+  else if (stateMotor1 == false && stateLimit1 == HIGH) {
+    dataLengan = -50;
     //Serial.println("Motor Down");
   }
   else {
@@ -327,9 +327,6 @@ void sendData() {
   Serial2.print(",");
   Serial2.print(rpm_3);
   Serial2.print("#");
-  Serial3.print("*");
-  Serial3.print(dataLengan);
-  Serial3.print("#");
 }
 
 void sendDataMotor() {
