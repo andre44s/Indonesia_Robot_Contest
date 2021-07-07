@@ -12,7 +12,7 @@ PS2X ps2x;
 char printBawah[15];
 String clawPrint, kickerPrint, pneuPrint;
 
-LiquidCrystal_I2C lcd(0x27, 16, 2); //0x27 atau 0x3F
+LiquidCrystal_I2C lcd(0x3F, 16, 2); //0x27 atau 0x3F
 char buf[3];
 
 struct Data_Package {
@@ -105,27 +105,27 @@ void loop() {
     Serial.println(data.RY);
   }
 
-  data.XButton = ps2x.ButtonPressed(PSB_BLUE);
+  data.XButton = ps2x.Button(PSB_BLUE);
   if (data.XButton) {
     Serial.println("X");
   }
 
-  data.TButton = ps2x.ButtonPressed(PSB_GREEN);
+  data.TButton = ps2x.Button(PSB_GREEN);
   if (data.TButton) {
     Serial.println("Triangle");
   }
 
-  data.SButton = ps2x.ButtonPressed(PSB_PINK);
+  data.SButton = ps2x.Button(PSB_PINK);
   if (data.SButton) {
     Serial.println("Square");
   }
 
-  data.CButton = ps2x.ButtonPressed(PSB_RED);
+  data.CButton = ps2x.Button(PSB_RED);
   if (data.CButton) {
     Serial.println("Circle");
   }
 
-  data.UButton = ps2x.ButtonPressed(PSB_PAD_UP);
+  data.UButton = ps2x.Button(PSB_PAD_UP);
   if (data.UButton) {
     Serial.println("Up");
   }
