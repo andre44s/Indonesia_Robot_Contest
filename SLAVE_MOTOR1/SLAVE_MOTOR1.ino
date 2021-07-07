@@ -13,10 +13,6 @@ const int switchB = PB15; //Pin Encoder
 int stateA = 0;
 int stateB = 0;
 int setRPM1 = 0;
-long x = 200;
-
-long nowMillis;
-long iTimer = 0;
 
 long previousMillis = 0; // Waktu Sebelumnya
 long currentMillis = 0; // Waktu Sekarang
@@ -32,9 +28,6 @@ void setup() {
   pinMode(switchA, INPUT_PULLUP);    //Pin Encoder Motor 1
   pinMode(switchB, INPUT_PULLUP);    //Pin Encoder Motor 1
   pinMode(mpwm, PWM);
-
-  previousMillis = millis();
-  x = setRPM1;
 }
 
 void loop() {
@@ -48,35 +41,13 @@ void loop() {
     setRPM1 = 0;
   }
 
-  if (x != setRPM1) {
-    iTimer = 0;
-    x = setRPM1;
-  }
-  else {
-    iTimer++;
-  }
-
-  Serial.print(nowMillis);
-  Serial.print("\t");
-  Serial.println(millis());
-
+  Serial.println(setRPM1);
   runMotor();
 }
 
 void runMotor() {
   if (setRPM1 > 0) {
-    if (iTimer < 1000) {
-      nowMillis = millis();
-    }
-    if (millis() - nowMillis <= 2500) {
-      pwmWrite(mpwm, 65535);
-      Serial.println("HIGH");
-    }
-    else {
-      pwmWrite(mpwm, 15000);
-      Serial.println("LOW");
-    }
-
+    pwmWrite(mpwm, abs(setRPM1) * 256);
     //CounterClockWise
     digitalWrite(mtr1, HIGH);
     digitalWrite(mtr2, LOW);
@@ -84,18 +55,7 @@ void runMotor() {
   }
 
   if (setRPM1 < 0) {
-    //ClockWise
-    if (iTimer < 1000) {
-      nowMillis = millis();
-    }
-    if (millis() - nowMillis <= 2500) {
-      pwmWrite(mpwm, 35000);
-      Serial.println("HIGH");
-    }
-    else {
-      pwmWrite(mpwm, 10000);
-      Serial.println("LOW");
-    }
+    pwmWrite(mpwm, abs(setRPM1) * 256);
     digitalWrite(mtr1, LOW);
     digitalWrite(mtr2, HIGH);
     //Serial.println("Down");
