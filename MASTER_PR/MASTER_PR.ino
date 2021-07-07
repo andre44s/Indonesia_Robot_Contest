@@ -35,6 +35,8 @@ int default3C = 100;
 int stateLengan = 0;
 int dataLengan = 0;
 
+int devider = 0;
+
 long long millisButton = 0, currentMillis = 0;
 
 // Max size of this struct is 32 bytes - NRF24L01 buffer limit
@@ -72,9 +74,9 @@ float dataGyro, yawTarget = 0;
 float PIDValueT = 0, gainValueT = 0;
 double errorT, previouserrorT;
 double P_T = 0, I_T = 0, D_T = 0;
-float KpT = 10;    //Kp
+float KpT = 5;    //Kp
 float KiT = 0;    //Ki
-float KdT = 15;      //Kd
+float KdT = 0;      //Kd
 
 int proxySensor1 = 4;
 int proxySensor2 = 5;
@@ -135,7 +137,6 @@ void loop() {
   stateSensor3 = digitalRead(proxySensor3);
   stateSensor4 = digitalRead(proxySensor4);
 
-  stateSensor1 = HIGH;
   stateSensor2 = HIGH;
   stateSensor3 = HIGH;
   stateSensor4 = HIGH;
@@ -146,9 +147,9 @@ void loop() {
 
   bacaRemote();
   sendSlave();
-  rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / 100;
-  rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / 100;
-  rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / 200;
+  rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / devider;
+  rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / devider;
+  rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / (devider * 2);
 }
 
 void bacaRemote() {
@@ -159,9 +160,9 @@ void bacaRemote() {
       if (data.LY > 128 && stateSensor3 == LOW) {
         data.LY = 128;
       }
-      if (data.LY < 128 && stateSensor1 == LOW) {
-        data.LY = 128;
-      }
+//      if (data.LY < 128 && stateSensor1 == LOW) {
+//        data.LY = 128;
+//      }
       if (data.LX > 128 && stateSensor2 == LOW) {
         data.LX = 128;
       }
@@ -281,13 +282,24 @@ void bacaRemote() {
     dataLengan = -100;
   }
   else {
-    dataLengan = 200;
+    if (stateSensor1) {
+      dataLengan = 250;
+    }
+    else{
+      dataLengan = 10;
+      }
   }
 
 
   if (data.L1) {
     Serial.println("L1 is pushed");
+    devider = 250;
   }
+
+  if (!data.L1) {
+    devider = 100;
+  }
+
   if (data.L2) {
     Serial.println("L2 is pushed");
   }
@@ -296,6 +308,7 @@ void bacaRemote() {
   }
   if (data.R1) {
     Serial.println("R1 is pushed");
+
   }
   if (data.R2) {
     Serial.println("R2 is pushed");
@@ -360,12 +373,12 @@ void PIDTeta() {
   previouserrorT = errorT;
   gainValueT = PIDValueT;
 
-  if (gainValueT >= 30) {
-    gainValueT = 30;
+  if (gainValueT >= 25) {
+    gainValueT = 25;
   }
 
-  if (gainValueT <= (-30)) {
-    gainValueT = (-30);
+  if (gainValueT <= (-25)) {
+    gainValueT = (-25);
   }
 }
 
@@ -479,5 +492,7 @@ void printSpeed() {
   Serial.print(" ");
   Serial.print(data.RX);
   Serial.print(" ");
-  Serial.println(data.RY);
+  Serial.print(stateSensor1);
+  Serial.print(" ");
+  Serial.println(dataLengan);
 }
