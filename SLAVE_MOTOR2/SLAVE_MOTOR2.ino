@@ -1,6 +1,6 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial Serial1(7, 6);
+SoftwareSerial myserial(3, 4);
 
 //Parsing
 String dataIn;
@@ -9,15 +9,15 @@ boolean parsing = false;
 boolean receive = false;
 
 //Motor
-const int mpwm1 = 4; // Pin PWM
-const int mpwm2 = 5;
-const int mtr1 = 2; // Pin Motor 1
-const int mtr2 = 3; // Pin Motor 2
-int setRPM1 = 0;
+const int mpwm1 = 5; // Pin PWM
+const int mpwm2 = 7;
+const int mtr1 = 9; // Pin Motor 1
+const int mtr2 = 10; // Pin Motor 2
+int setRPM1;
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(9600);
+  myserial.begin(9600);
 
   pinMode(mtr1, OUTPUT);
   pinMode(mtr2, OUTPUT);
@@ -37,34 +37,34 @@ void loop() {
 void runMotor() {
   if (setRPM1 > 0) {
     //CounterClockWise
-    analogWrite(mpwm1, abs(setRPM1));
-    analogWrite(mpwm2, 0);
-    digitalWrite(mtr1, HIGH);
-    digitalWrite(mtr2, HIGH);
-    //Serial.println("Up");
+    digitalWrite(mpwm1, LOW);
+    digitalWrite(mpwm2, HIGH);
+    analogWrite(mtr1, abs(setRPM1));
+    analogWrite(mtr2, abs(setRPM1));
+    Serial.println("Up");
   }
 
   if (setRPM1 < 0) {
     //ClockWise
-    analogWrite(mpwm1, 0);
-    analogWrite(mpwm2, abs(setRPM1));
-    digitalWrite(mtr1, HIGH);
-    digitalWrite(mtr2, HIGH);
-    //Serial.println("Down");
+    digitalWrite(mpwm1, HIGH);
+    digitalWrite(mpwm2, LOW);
+    analogWrite(mtr1, abs(setRPM1));
+    analogWrite(mtr2, abs(setRPM1));
+    Serial.println("Down");
   }
 
   if (setRPM1 == 0) {
     //Stop
-    analogWrite(mpwm1, 0);
-    analogWrite(mpwm2, 0);
-    digitalWrite(mtr1, LOW);
-    digitalWrite(mtr2, LOW);
+    digitalWrite(mpwm1, LOW);
+    digitalWrite(mpwm2, LOW);
+    analogWrite(mtr1, 0);
+    analogWrite(mtr2, 0);
   }
 }
 
 void cekData() {
-  while (Serial1.available() > 0) {
-    char inChar = (char)Serial1.read();
+  while (myserial.available() > 0) {
+    char inChar = (char)myserial.read();
     if (inChar == '*') {
       dataIn = "";
       receive = true;
