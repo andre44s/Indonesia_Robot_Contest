@@ -10,7 +10,7 @@ boolean receive = false;
 
 //Motor
 const int mpwm1 = 5; // Pin PWM
-const int mpwm2 = 7;
+const int mpwm2 = 6;
 const int mtr1 = 9; // Pin Motor 1
 const int mtr2 = 10; // Pin Motor 2
 int setRPM1;

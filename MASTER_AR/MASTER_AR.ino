@@ -10,7 +10,7 @@ const byte address[6] = "111111";
 //Variable Motor
 int rpm_x, rpm_y, rotateSpeed;
 int rpm_1, rpm_2, rpm_3;
-int max_rpm = 100;
+int max_rpm = 200;
 
 // Max size of this struct is 32 bytes - NRF24L01 buffer limit
 struct Data_Package {
@@ -47,9 +47,9 @@ float dataGyro, yawTarget = 0;
 float PIDValueT = 0, gainValueT = 0;
 double errorT, previouserrorT;
 double P_T = 0, I_T = 0, D_T = 0;
-float KpT = 10;    //Kp
+float KpT = 8;    //Kp
 float KiT = 0;    //Ki
-float KdT = 15;      //Kd
+float KdT = 0;      //Kd
 
 int servo1Pin = A4;
 Servo Servo1;
@@ -66,12 +66,14 @@ int stateRelay2 = 0;
 int stateRelay3 = 0;
 
 int stateServo1 = 0;
-int stateMotor1 = 0;
+int stateMotor1 = true;
 
 int stateLimit1 = 0;
 int stateLimit2 = 0;
 
 int dataLengan = 0;
+
+int devider = 0;
 
 long long millisButton = 0, currentMillis = 0, previousMillis = 0;
 
@@ -127,9 +129,9 @@ void loop() {
   stateLimit2 = digitalRead(limit2);
 
   bacaRemote();
-  rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / 100;
-  rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / 100;
-  rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / 200;
+  rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / devider;
+  rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / devider;
+  rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / (devider * 2);
 
 }
 
@@ -233,7 +235,7 @@ void bacaRemote() {
     //Serial.println("Motor Up");
   }
   else if (stateMotor1 == false && stateLimit1 == HIGH) {
-    dataLengan = -50;
+    dataLengan = -200;
     //Serial.println("Motor Down");
   }
   else {
@@ -250,9 +252,16 @@ void bacaRemote() {
   if (data.DButton) {
     Serial.println("Down Button is pressed");
   }
+
   if (data.L1) {
     Serial.println("L1 is pushed");
+    devider = 250;
   }
+
+  if (!data.L1) {
+    devider = 100;
+  }
+
   if (data.L2) {
     Serial.println("L2 is pushed");
   }
@@ -310,12 +319,12 @@ void PIDTeta() {
   previouserrorT = errorT;
   gainValueT = PIDValueT;
 
-  if (gainValueT >= 30) {
-    gainValueT = 30;
+  if (gainValueT >= 25) {
+    gainValueT = 25;
   }
 
-  if (gainValueT <= (-30)) {
-    gainValueT = (-30);
+  if (gainValueT <= (-25)) {
+    gainValueT = (-25);
   }
 }
 
@@ -343,16 +352,16 @@ void rotateMotor() {
 }
 
 void fixMotor() {
-  rpm_1 = gainValueT * 1.5;
-  rpm_2 = -gainValueT * 1.5;
-  rpm_3 = -gainValueT * 1.5;
+  rpm_1 = gainValueT;
+  rpm_2 = -gainValueT;
+  rpm_3 = -gainValueT;
   sendData();
 }
 
 void moveMotor() {
-  rpm_1 = rpm_y + rpm_x - gainValueT;
-  rpm_3 = rpm_y + -rpm_x + gainValueT;
-  rpm_2 = rpm_x + gainValueT;
+  rpm_1 = rpm_y + rpm_x + gainValueT;
+  rpm_3 = rpm_y + -rpm_x - gainValueT;
+  rpm_2 = rpm_x - gainValueT;
   sendData();
 }
 

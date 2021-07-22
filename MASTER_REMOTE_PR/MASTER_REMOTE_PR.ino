@@ -5,13 +5,14 @@
 #include <PS2X_lib.h>
 #include <LiquidCrystal_I2C.h>
 
-//Remote Lama 0x27 
+//Remote Lama 0x27
 RF24 radio(7, 8);   // nRF24L01 (CE, CSN)
 const byte address[6] = "000111"; // Address
 
 PS2X ps2x;
 LiquidCrystal_I2C lcd(0x27, 16, 2); //0x27 atau 0x3F
 char printBawah[15];
+char printAtas[15];
 char buf[3];
 
 struct Data_Package {
@@ -33,6 +34,7 @@ struct Data_Package {
   byte R1;
   byte R2;
   byte R3;
+  byte Step;
 };
 Data_Package data; //Create a variable with the above structure
 
@@ -68,11 +70,12 @@ void setup() {
   data.R1 = 0;
   data.R2 = 0;
   data.R3 = 0;
+  data.Step = 1;
 }
 
 void loop() {
   ps2x.read_gamepad(false, 0);          //read controller and set large motor to spin at 'vibrate' speed
-  
+
   data.LX = ps2x.Analog(PSS_LX);
   data.LY = ps2x.Analog(PSS_LY);
   data.RX = ps2x.Analog(PSS_RX);
@@ -133,27 +136,39 @@ void loop() {
   if (data.R1) {
     Serial.println("R1");
   }
-  
-  data.R2 = ps2x.Button(PSB_R2);
+
+  data.R2 = ps2x.ButtonPressed(PSB_R2);
   if (data.R2) {
     Serial.println("R2");
+    if (data.Step < 8) {
+      data.Step = data.Step + 1;
+    }
+    else {
+      data.Step = 1;
+    }
   }
-  
+
   data.R3 = ps2x.Button(PSB_R3);
   if (data.R3) {
     Serial.println("R3");
   }
-  
+
   data.L1 = ps2x.Button(PSB_L1);
   if (data.L1) {
     Serial.println("L1");
   }
-  
-  data.L2 = ps2x.Button(PSB_L2);
+
+  data.L2 = ps2x.ButtonPressed(PSB_L2);
   if (data.L2) {
     Serial.println("L2");
+    if (data.Step > 1) {
+      data.Step = data.Step - 1;
+    }
+    else {
+      data.Step = 8;
+    }
   }
-  
+
   data.L3 = ps2x.Button(PSB_L3);
   if (data.L3) {
     Serial.println("L3");
@@ -161,19 +176,13 @@ void loop() {
 
   radio.write(&data, sizeof(Data_Package));
 
-  lcd.setCursor(0, 0);
-  lcd.print("KRAI JATAYU 2021");
-
-  sprintf(printBawah, "%03d ", data.LX);
+  sprintf(printBawah, "%03d %03d %03d %03d", data.LX, data.LY, data.RX, data.RY);
   lcd.setCursor(0, 1);
   lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.LY);
-  lcd.setCursor(4, 1);
-  lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.RX);
-  lcd.setCursor(8, 1);
-  lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.RY);
-  lcd.setCursor(12, 1);
-  lcd.print(printBawah);
+
+  lcd.setCursor(0, 0);
+  sprintf(printAtas, "JATAYU STEP = %d", data.Step);
+  lcd.print(printAtas);
+
+
 }
