@@ -1,18 +1,13 @@
+//Library
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Wire.h>
 #include <Servo.h>
 
+//NRF24 Variable Definition
 RF24 radio(A10, A11);   // nRF24L01 (CE, CSN)
 const byte address[6] = "111111";
-
-//Variable Motor
-int rpm_x, rpm_y, rotateSpeed;
-int rpm_1, rpm_2, rpm_3;
-int max_rpm = 200;
-
-// Max size of this struct is 32 bytes - NRF24L01 buffer limit
 struct Data_Package {
   byte LX;
   byte LY;
@@ -33,9 +28,9 @@ struct Data_Package {
   byte R2;
   byte R3;
 };
-Data_Package data; //Create a variable with the above structure
+Data_Package data;
 
-//Parsing
+//Parsing Data
 String dataInTeta;
 String arrayDataTeta[10];
 boolean parsingTeta = false;
@@ -43,55 +38,89 @@ boolean receiveTeta = false;
 float dataGyro, yawTarget = 0;
 
 //PID Gerak Robot
-//Variable PID Maju Mundur
 float PIDValueT = 0, gainValueT = 0;
 double errorT, previouserrorT;
 double P_T = 0, I_T = 0, D_T = 0;
 float KpT = 8;    //Kp
 float KiT = 0;    //Ki
-float KdT = 0;      //Kd
+float KdT = 0;    //Kd
 
-int servo1Pin = A4;
+//Pin Definition
+//Servo
+const int servo1Pin = A0; //Right Holder
+const int servo2Pin = A1; //Left Holder
+const int servo3Pin = A2; //Left Gripper
+const int servo4Pin = A3; //Right Gripper
 Servo Servo1;
+Servo Servo2;
+Servo Servo3;
+Servo Servo4;
+//Relay
+const int relay1 = 6; //Right Motor Relay
+const int relay2 = 7; //Left Motor Relay
+//Limit Switch
+const int limit1 = 4; //Bottom Limit Switch
+const int limit2 = 5; //Top Limit Switch
+//Proxy Sensor
+const int proxy = A4;
 
-int relay1 = A0;
-int relay2 = A1;
-int relay3 = A2;
-
-int limit1 = 6;
-int limit2 = 7;
-
+//Pin State
+//Relay
 int stateRelay1 = 0;
 int stateRelay2 = 0;
-int stateRelay3 = 0;
-
-int stateServo1 = 0;
-int stateMotor1 = true;
-
+//Limit Switch
 int stateLimit1 = 0;
 int stateLimit2 = 0;
+//Servo
+int stateServo1 = 0;
+int stateServo2 = 0;
+int stateServo3 = 0;
+int stateServo4 = 0;
+//Sensor
+int stateSensor1 = 0;
+//Slave Motor
+int stateMotor1 = 0;
 
+//Number Variable
 int dataLengan = 0;
-
 int devider = 0;
-
 long long millisButton = 0, currentMillis = 0, previousMillis = 0;
+int rpm_x, rpm_y, rotateSpeed;
+int rpm_1, rpm_2, rpm_3;
+int max_rpm = 100;
+
 
 void setup() {
+  //Serial
   Serial.begin(115200);
   Serial1.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 1
   Serial2.begin(115200); // Configuracion del puerto serial de comunicacion con el ESCLAVO 2
   Serial3.begin(9600);
 
+  //Servo
   Servo1.attach(servo1Pin);
+  Servo2.attach(servo2Pin);
+  Servo3.attach(servo3Pin);
+  Servo4.attach(servo4Pin);
+  Servo1.write(0);
+  Servo2.write(0);
+  Servo3.write(0);
+  Servo4.write(0);
 
+  //Relay
   pinMode(relay1, OUTPUT);
   pinMode(relay2, OUTPUT);
-  pinMode(relay3, OUTPUT);
+  digitalWrite(relay1, HIGH);
+  digitalWrite(relay2, HIGH);
 
+  //Limit Switch
   pinMode(limit1, INPUT_PULLUP);
   pinMode(limit2, INPUT_PULLUP);
 
+  //Proxy
+  pinMode(proxy, INPUT);
+
+  //NRF24
   radio.begin();
   radio.openReadingPipe(0, address);
   radio.setAutoAck(false);
@@ -100,13 +129,8 @@ void setup() {
   radio.startListening(); //  Set the module as receiver
   resetData();
 
+  //Timer
   previousMillis = millis();
-
-  Servo1.write(0);
-
-  digitalWrite(relay1, HIGH);
-  digitalWrite(relay2, HIGH);
-  digitalWrite(relay3, HIGH);
 }
 
 void loop() {
@@ -115,6 +139,7 @@ void loop() {
     radio.read(&data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure
   }
 
+  //Timer every 100ms
   currentMillis = millis();
   if (currentMillis - previousMillis > 100) {
     previousMillis = currentMillis;
@@ -122,11 +147,14 @@ void loop() {
     printSpeed();
   }
 
+  //Gyro Checking
   cekDataGyro();
   PIDTeta();
 
+  //Read Sensor
   stateLimit1 = digitalRead(limit1);
   stateLimit2 = digitalRead(limit2);
+  stateSensor1 = digitalRead(proxy);
 
   bacaRemote();
   rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / devider;
@@ -168,61 +196,45 @@ void bacaRemote() {
   //Triangle
   if (data.TButton && currentMillis - millisButton >= 1000) {
     Serial.println("Triangle is pushed");
-    stateRelay1 = !stateRelay1;
+    stateServo1 = !stateServo1;
     millisButton = millis();
-  }
-  if (stateRelay1) {
-    digitalWrite(relay1, HIGH);
-    //Serial.println("RELAY 1 ON");
-  }
-  else {
-    digitalWrite(relay1, LOW);
-    //Serial.println("RELAY 1 OFF");
+  } if (stateServo1) {
+    Servo1.write(0);
+  } else {
+    Servo1.write(100);
   }
 
-  //Square
+  //Square]
   if (data.SButton && currentMillis - millisButton >= 1000) {
     Serial.println("Square is pushed");
-    stateRelay2 = !stateRelay2;
+    stateServo2 = !stateServo2;
     millisButton = millis();
-  }
-  if (stateRelay2) {
-    digitalWrite(relay2, HIGH);
-    //Serial.println("RELAY 2 ON");
-  }
-  else {
-    digitalWrite(relay2, LOW);
-    //Serial.println("RELAY 2 OFF");
+  } if (stateServo2) {
+    Servo2.write(0);
+  } else {
+    Servo2.write(100);
   }
 
   //Circle
   if (data.CButton && currentMillis - millisButton >= 1000) {
     Serial.println("Circle is pushed");
-    stateRelay3 = !stateRelay3;
+    stateServo3 = !stateServo3;
     millisButton = millis();
-  }
-  if (stateRelay3) {
-    digitalWrite(relay3, HIGH);
-    //Serial.println("RELAY 3 ON");
-  }
-  else {
-    digitalWrite(relay3, LOW);
-    //Serial.println("RELAY 3 OFF");
+  } if (stateServo3) {
+    Servo3.write(0);
+  } else {
+    Servo3.write(100);
   }
 
-  //Circle
+  //X
   if (data.XButton && currentMillis - millisButton >= 1000) {
     Serial.println("Circle is pushed");
-    stateServo1 = !stateServo1;
+    stateServo4 = !stateServo4;
     millisButton = millis();
-  }
-  if (stateServo1) {
-    Servo1.write(0);
-    //Serial.println("SERVO 1 ON");
-  }
-  else {
-    Servo1.write(100);
-    //Serial.println("SERVO 1 OFF");
+  } if (stateServo4) {
+    Servo4.write(0);
+  } else {
+    Servo4.write(100);
   }
 
   if (data.UButton && currentMillis - millisButton >= 1000) {
@@ -231,24 +243,37 @@ void bacaRemote() {
     millisButton = millis();
   }
   if (stateMotor1 == true && stateLimit2 == HIGH) {
-    dataLengan = 50;
-    //Serial.println("Motor Up");
+    if (stateSensor1) {
+      dataLengan = 185;
+    }
+    else {
+      dataLengan = 5;
+    }
   }
   else if (stateMotor1 == false && stateLimit1 == HIGH) {
-    dataLengan = -200;
-    //Serial.println("Motor Down");
+    dataLengan = -100;
   }
   else {
     dataLengan = 0;
-    //Serial.print("Motor Stop");
   }
 
+  //Left Motor Activation
   if (data.LButton) {
     Serial.println("Left Button is pressed");
-  }
+    digitalWrite(relay2, LOW);
+  } else {
+    digitalWrite(relay2, HIGH);
+  };
+
+  //Right Motor Activation
   if (data.RButton) {
     Serial.println("Right Button is pressed");
-  }
+    digitalWrite(relay1, LOW);
+  } else {
+    digitalWrite(relay1, HIGH);
+  };
+
+
   if (data.DButton) {
     Serial.println("Down Button is pressed");
   }
@@ -412,11 +437,9 @@ void parsingDataTeta() {
 }
 
 void printSpeed() {
-  Serial.print(data.RX);
+  Serial.print(stateLimit1);
   Serial.print(" ");
-  Serial.print(data.LY);
+  Serial.print(stateLimit2);
   Serial.print(" ");
-  Serial.print(dataLengan);
-  Serial.println(" ");
-  Serial.flush();
+  Serial.println(stateSensor1);
 }
