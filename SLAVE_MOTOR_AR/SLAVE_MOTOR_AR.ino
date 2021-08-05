@@ -17,6 +17,7 @@ long currentRPM1 = 0; //Kecepatan yang dibaca
 
 //Motor 2
 const int mpwm2 = PA6; // Pin PWM
+const int mpwm2b = PB0; // Pin PWM
 const int mtr2a = PB4; // Pin Motor A
 const int mtr2b = PB5; // Pin Motor B
 #define ENC_COUNT_REV2 540 //Jumlah Gigi Encoder
@@ -36,17 +37,6 @@ const int enc3b = PB7; //Pin Encoder
 long revolutions3 = 0; // Putaran dalam satuan waktu
 long setRPM3 = 0; //Setpoint RPM
 long currentRPM3 = 0; //Kecepatan yang dibaca
-
-//Motor 4
-const int mpwm4 = PA6; // Pin PWM
-const int mtr4a = PB4; // Pin Motor A
-const int mtr4b = PB5; // Pin Motor B
-#define ENC_COUNT_REV4 540 //Jumlah Gigi Encoder
-const int enc4a = PB8; //Pin Encoder
-const int enc4b = PB9; //Pin Encoder
-long revolutions4 = 0; // Putaran dalam satuan waktu
-long setRPM4 = 0; //Setpoint RPM
-long currentRPM4 = 0; //Kecepatan yang dibaca
 
 long previousMillis = 0; // Waktu Sebelumnya
 long currentMillis = 0; // Waktu Sekarang
@@ -90,6 +80,7 @@ void setup() {
   pinMode(enc2a, INPUT);
   pinMode(enc2b, INPUT);
   pinMode(mpwm2, PWM);
+  pinMode(mpwm2b, PWM);
   pinMode(mtr2a, OUTPUT);
   pinMode(mtr2b, OUTPUT);
 
@@ -147,7 +138,6 @@ void loop() {
 
 void runMotor() {
   pwmWrite(mpwm1, pwmValue1);
-  pwmWrite(mpwm2, pwmValue2);
   pwmWrite(mpwm3, pwmValue3);
 
   if (setRPM1 > 0) {
@@ -171,21 +161,26 @@ void runMotor() {
 
   if (setRPM2 > 0) {
     //CounterClockWise
+    pwmWrite(mpwm2, 0);
+    pwmWrite(mpwm2b, pwmValue2);
     digitalWrite(mtr2a, HIGH);
-    digitalWrite(mtr2b, LOW);
+    digitalWrite(mtr2b, HIGH);
   }
 
   if (setRPM2 < 0) {
     //ClockWise
-    digitalWrite(mtr2a, LOW);
+    pwmWrite(mpwm2, pwmValue2);
+    pwmWrite(mpwm2b, 0);
+    digitalWrite(mtr2a, HIGH);
     digitalWrite(mtr2b, HIGH);
   }
 
   if (setRPM2 == 0) {
     //Stop
-    pwmWrite(mpwm2, 0);
-    digitalWrite(mtr2a, LOW);
-    digitalWrite(mtr2b, LOW);
+    pwmWrite(mpwm2, pwmValue2);
+    pwmWrite(mpwm2b, pwmValue2);
+    digitalWrite(mtr2a, HIGH);
+    digitalWrite(mtr2b, HIGH);
   }
 
   if (setRPM3 > 0) {
