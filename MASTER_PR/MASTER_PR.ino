@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
-int a, b, c, d;
+int a, b, c;
 
 SoftwareSerial Serial4(2, 3); //rx tx
 
@@ -14,7 +14,7 @@ const byte address[6] = "000111"; // Address
 //Variable Motor
 int rpm_x, rpm_y, rotateSpeed;
 int rpm_1, rpm_2, rpm_3, rpm_4;
-int max_rpm = 100;
+int max_rpm = 150;
 
 //Variabel Sensor PING
 //Sensor Depan = 1
@@ -25,7 +25,6 @@ int distance1;
 
 //Sensor Kanan = 2
 const int TRIG_PIN2 = 8;
-const int ECHO_PIN2 = 9;
 long duration2;
 int distance2;
 
@@ -34,12 +33,6 @@ const int TRIG_PIN3 = 11;
 const int ECHO_PIN3 = 10;
 long duration3;
 int distance3;
-
-//Sensor Kiri = 4
-const int TRIG_PIN4 = 7;
-const int ECHO_PIN4 = 6;
-long duration4;
-int distance4;
 
 int stateServo13  = false;
 int stateServo45  = false;
@@ -63,7 +56,7 @@ int stateLengan = 0;
 int dataLengan = 0;
 
 int devider = 0;
-int inDelay = 30000;
+int inDelay = 40000;
 
 long long millisButton = 0, currentMillis = 0, prevMillis = 0;
 
@@ -119,7 +112,6 @@ int relay4 = A3;
 int loc1 = 0;
 int loc2 = 0;
 int loc3 = 0;
-int loc4 = 0;
 
 int stateAuto = 0;
 
@@ -153,14 +145,8 @@ void setup() {
   pinMode(TRIG_PIN1, OUTPUT);
   pinMode(ECHO_PIN1, INPUT);
 
-  pinMode(TRIG_PIN2, OUTPUT);
-  pinMode(ECHO_PIN2, INPUT);
-
   pinMode(TRIG_PIN3, OUTPUT);
   pinMode(ECHO_PIN3, INPUT);
-
-  pinMode(TRIG_PIN4, OUTPUT);
-  pinMode(ECHO_PIN4, INPUT);
 
   prevMillis = millis();
 }
@@ -172,7 +158,7 @@ void loop() {
   }
 
   currentMillis = millis();
-  if (currentMillis - prevMillis >= 100) {
+  if (currentMillis - prevMillis >= 200) {
     prevMillis = currentMillis;
 
     //Pembacaan dan perhitungan sensor PING
@@ -182,16 +168,19 @@ void loop() {
     digitalWrite(TRIG_PIN1, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN1, LOW);
-    duration1 = pulseIn(ECHO_PIN1, HIGH, inDelay);
+    duration1 = pulseIn(ECHO_PIN1, HIGH, 10000);
     distance1 = duration1 / 28 / 2 ;
 
     //Sensor Kanan (2)
+    pinMode(TRIG_PIN2, OUTPUT);
     digitalWrite(TRIG_PIN2, LOW);
     delayMicroseconds(2);
     digitalWrite(TRIG_PIN2, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN2, LOW);
-    duration2 = pulseIn(ECHO_PIN2, HIGH, inDelay);
+
+    pinMode(TRIG_PIN2, INPUT);
+    duration2 = pulseIn(TRIG_PIN2, HIGH, 10000);
     distance2 = duration2 / 28 / 2 ;
 
     //Sensor Belakang (3)
@@ -200,21 +189,12 @@ void loop() {
     digitalWrite(TRIG_PIN3, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN3, LOW);
-    duration3 = pulseIn(ECHO_PIN3, HIGH, inDelay);
+    duration3 = pulseIn(ECHO_PIN3, HIGH, 130000);
     distance3 = duration3 / 28 / 2 ;
-
-    //Sensor Belakang (4)
-    digitalWrite(TRIG_PIN4, LOW);
-    delayMicroseconds(2);
-    digitalWrite(TRIG_PIN4, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIG_PIN4, LOW);
-    duration4 = pulseIn(ECHO_PIN4, HIGH, inDelay);
-    distance4 = duration4 / 28 / 2 ;
+    printSpeed();
   }
 
   stateSensor1 = digitalRead(proxySensor1);
-  printSpeed();
   cekDataGyro();
   PIDTeta();
 
@@ -374,7 +354,7 @@ void bacaRemote() {
     Serial.println("L3 is pushed");
   }
   if (data.R1) {
-    stateAuto = 1;
+    stateAuto= 1;
   }
   else {
     stateAuto = 0;
@@ -567,10 +547,6 @@ void printSpeed() {
   Serial.print("=");
   Serial.print(loc3);
   Serial.print("   ");
-  Serial.print(distance4);
-  Serial.print("=");
-  Serial.print(loc4);
-  Serial.print("   ");
   Serial.print(rpm_y);
   Serial.print("    ");
   Serial.println(rpm_x);
@@ -582,70 +558,31 @@ void autoLocation() {
       loc1 = distance1;
       loc2 = distance2;
       loc3 = distance3;
-      loc4 = distance4;
       break;
 
     case 1:
-      loc1 = 25;
-      loc2 = 84;
+      loc1 = 23;
+      loc2 = 16;
       loc3 = 91;
-      loc4 = distance4;
       break;
 
     case 2:
-      loc1 = 10;
-      loc2 = 32;
-      loc3 = 105;
-      loc4 = distance4;
+      loc1 = 48;
+      loc2 = 84;
+      loc3 = 64;
       break;
 
     case 3:
-      loc1 = 51;
-      loc2 = 271;
-      loc3 = 63;
-      loc4 = 346;
-      break;
-
-    case 4:
-      loc1 = distance1;
-      loc2 = 345;
-      loc3 = 60;
-      loc4 = 273;
-      break;
-
-    case 5:
-      loc1 = 8;
-      loc2 = distance2;
-      loc3 = 105;
-      loc4 = 94;
-      break;
-
-    case 6:
-      loc1 = 31;
-      loc2 = distance2;
-      loc3 = distance3;
-      loc4 = 33;
-      break;
-
-    case 7:
-      loc1 = distance1;
-      loc2 = 372;
-      loc3 = 87;
-      loc4 = 246;
-      break;
-
-    case 8:
-      loc1 = 27;
-      loc2 = 292;
-      loc3 = 87;
-      loc4 = 325;
+      loc1 = 58;
+      loc2 = 263;
+      loc3 = 55;
       break;
   }
 
   //Mundur
-  if (distance1 < loc1 || distance3 > loc3) {
+  if (distance1 < loc1 || distance2 > loc3) {
     a = abs(loc1 - distance1);
-    b = abs(loc3 - distance3);
+    b = abs(loc3 - distance2);
 
     if (a > b) {
       rpm_y = a + 15;
@@ -664,9 +601,9 @@ void autoLocation() {
 
 
   //Maju
-  if (distance1 > loc1 || distance3 < loc3) {
+  if (distance1 > loc1 || distance2 < loc3) {
     a = abs(loc1 - distance1) * -1;
-    b = abs(loc3 - distance3) * -1;
+    b = abs(loc3 - distance2) * -1;
 
     if (a > b) {
       rpm_y = b - 15;
@@ -684,24 +621,15 @@ void autoLocation() {
   }
 
   //Move Y
-  if ((distance1 < loc1 + 3 && distance1 > loc1 - 3)  && (distance3 < loc3 + 3 && distance3 > loc3 - 3)) {
+  if ((distance1 < loc1 + 3 && distance1 > loc1 - 3)  && (distance2 < loc3 + 3 && distance2 > loc3 - 3)) {
     rpm_y = 0;
   }
 
   //Kanan
-  if (distance2 > loc2 || distance4 < loc4) {
-    c = abs(loc2 - distance2);
-    d = abs(loc4 - distance4);
+  if (distance3 > loc2) {
+    c = abs(loc2 - distance3);
 
-    if (c > d) {
-      rpm_x = c + 15;
-    }
-    else if (c < d) {
-      rpm_x = d + 15;
-    }
-    else {
-      rpm_x = (c + d) / 2 + 15;
-    }
+    rpm_x = c;
 
     if (rpm_x > 50) {
       rpm_x = 50;
@@ -709,19 +637,10 @@ void autoLocation() {
   }
 
   //Kiri
-  if (distance2 < loc2 || distance4 > loc4) {
-    c = abs(loc2 - distance2) * -1;
-    d = abs(loc4 - distance4) * -1;
+  if (distance3 < loc2) {
+    c = abs(loc2 - distance3) * -1;
 
-    if (c > d) {
-      rpm_x = d - 15;
-    }
-    else if (c < d) {
-      rpm_x = c - 15;
-    }
-    else {
-      rpm_x = (c + d) / 2 - 15;
-    }
+    rpm_x = c;
 
     if (rpm_x < -50) {
       rpm_x = -50;
@@ -729,7 +648,7 @@ void autoLocation() {
   }
 
   //Move X
-  if ((distance2 < loc2 + 3 && distance2 > loc2 - 3)  && (distance4 < loc4 + 3 && distance4 > loc4 - 3)) {
+  if ((distance3 < loc2 + 3 && distance3 > loc2 - 3)) {
     rpm_x = 0;
   }
 

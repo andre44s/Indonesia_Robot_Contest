@@ -27,8 +27,11 @@ struct Data_Package {
   byte R1;
   byte R2;
   byte R3;
+  byte Step;
 };
 Data_Package data;
+
+int stateAuto = 0;
 
 //Parsing Data
 String dataInTeta;
@@ -64,6 +67,17 @@ const int limit2 = 5; //Top Limit Switch
 //Proxy Sensor
 const int proxy = A4;
 
+const int TRIG_PIN1 = 11;
+const int ECHO_PIN1 = 10;
+long duration1;
+int distance1;
+
+//Sensor Belakang = 3
+const int TRIG_PIN3 = 2;
+const int ECHO_PIN3 = 3;
+long duration3;
+int distance3;
+
 //Pin State
 //Relay
 int stateRelay1 = 0;
@@ -79,7 +93,7 @@ int stateServo4 = 0;
 //Sensor
 int stateSensor1 = 0;
 //Slave Motor
-int stateMotor1 = 0;
+int stateMotor1 = 1;
 
 //Number Variable
 int dataLengan = 0;
@@ -89,6 +103,8 @@ int rpm_x, rpm_y, rotateSpeed;
 int rpm_1, rpm_2, rpm_3;
 int max_rpm = 100;
 
+int loc1 = 0;
+int loc3 = 0;
 
 void setup() {
   //Serial
@@ -112,6 +128,12 @@ void setup() {
   pinMode(relay2, OUTPUT);
   digitalWrite(relay1, HIGH);
   digitalWrite(relay2, HIGH);
+
+  pinMode(TRIG_PIN1, OUTPUT);
+  pinMode(ECHO_PIN1, INPUT);
+
+  pinMode(TRIG_PIN3, OUTPUT);
+  pinMode(ECHO_PIN3, INPUT);
 
   //Limit Switch
   pinMode(limit1, INPUT_PULLUP);
@@ -144,6 +166,24 @@ void loop() {
   if (currentMillis - previousMillis > 100) {
     previousMillis = currentMillis;
     sendDataMotor();
+
+    digitalWrite(TRIG_PIN1, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN1, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN1, LOW);
+    duration1 = pulseIn(ECHO_PIN1, HIGH, 30000);
+    distance1 = duration1 / 28 / 2 ;
+
+    //Sensor Belakang (3)
+    digitalWrite(TRIG_PIN3, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN3, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN3, LOW);
+    duration3 = pulseIn(ECHO_PIN3, HIGH, 30000);
+    distance3 = duration3 / 28 / 2 ;
+
     printSpeed();
   }
 
@@ -157,10 +197,17 @@ void loop() {
   stateSensor1 = digitalRead(proxy);
 
   bacaRemote();
-  rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / devider;
-  rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / devider;
-  rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / (devider * 2);
 
+  if (stateAuto) {
+    autoLocation();
+    //Serial.println("Auto");
+  }
+  else {
+    rpm_x = (map(data.LX, 0, 255, -100, 100) * max_rpm) / devider;
+    rpm_y = (map(data.LY, 0, 255, -100, 100) * max_rpm) / devider;
+    rotateSpeed = (map(data.RX, 0, 255, -100, 100) * max_rpm) / (devider * 2);
+    //Serial.println("Manual");
+  }
 }
 
 void bacaRemote() {
@@ -182,7 +229,7 @@ void bacaRemote() {
   }
 
   //Bagian Stop Motor
-  if (data.LY == 128 && data.LX == 128 && data.RX == 128) {
+  if (data.LY == 128 && data.LX == 128 && data.RX == 128 && stateAuto == 0) {
     if (errorT > 1 || errorT < -1) {
       fixMotor();
     }
@@ -238,20 +285,25 @@ void bacaRemote() {
   }
 
   if (data.UButton && currentMillis - millisButton >= 1000) {
-    //Serial.println("Circle is pushed");
+    Serial.println("U is pushed");
     stateMotor1 = !stateMotor1;
     millisButton = millis();
   }
   if (stateMotor1 == true && stateLimit2 == HIGH) {
     if (stateSensor1) {
-      dataLengan = 185;
+      dataLengan = 200;
     }
     else {
       dataLengan = 5;
     }
   }
   else if (stateMotor1 == false && stateLimit1 == HIGH) {
-    dataLengan = -100;
+    if (!stateSensor1) {
+      dataLengan = -170;
+    }
+    else {
+      dataLengan = -30;
+    }
   }
   else {
     dataLengan = 0;
@@ -293,9 +345,14 @@ void bacaRemote() {
   if (data.L3) {
     Serial.println("L3 is pushed");
   }
+
   if (data.R1) {
-    Serial.println("R1 is pushed");
+    stateAuto = 1;
   }
+  else {
+    stateAuto = 0;
+  }
+
   if (data.R2) {
     Serial.println("R2 is pushed");
   }
@@ -437,9 +494,47 @@ void parsingDataTeta() {
 }
 
 void printSpeed() {
-  Serial.print(stateLimit1);
+  Serial.print(distance1);
   Serial.print(" ");
-  Serial.print(stateLimit2);
+  Serial.print(distance3);
   Serial.print(" ");
-  Serial.println(stateSensor1);
+  Serial.print(dataLengan);
+  Serial.print(" ");
+  Serial.println(rpm_y);
+}
+
+void autoLocation() {
+  switch (data.Step) {
+    case 1:
+      loc1 = 8;
+      loc3 = 45;
+      break;
+
+    case 2:
+      loc1 = 6;
+      loc3 = 93;
+      break;
+  }
+
+  //Move Y
+  if ((distance1 < loc1 + 3 && distance1 > loc1 - 3)) {
+    rpm_y = 0;
+  }
+  if (distance1 > loc1) {
+    rpm_y = -25;
+  } else {
+    rpm_y = 25;
+  }
+
+  //Move X
+  if ((distance3 < loc3 + 3 && distance3 > loc3 - 3)) {
+    rpm_x = 0;
+  }
+  if (distance3 > loc3) {
+    rpm_x = -25;
+  } else {
+    rpm_x = 25;
+  }
+
+  moveMotor();
 }

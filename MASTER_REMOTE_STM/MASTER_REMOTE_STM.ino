@@ -49,7 +49,8 @@ void setup() {
   radio.setDataRate(RF24_250KBPS);
   radio.setPALevel(RF24_PA_MIN);
 
-  lcd.begin();   // iInit the LCD for 16 chars 2 lines
+    //lcd.begin();   // iInit the LCD for 16 chars 2 lines
+  lcd.init();
   lcd.backlight();   // Turn on the backligt (try lcd.noBaklight() to turn it off)
 
   data.LX = 128;

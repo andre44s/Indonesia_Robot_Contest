@@ -1,4 +1,4 @@
-  #include <SPI.h>
+#include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Wire.h>
@@ -9,7 +9,7 @@ RF24 radio(7, 8);   // nRF24L01 (CE, CSN)
 const byte address[6] = "111111"; // Address
 
 PS2X ps2x;
-char printBawah[15];
+char printBawah[16], printAtas[16];
 String clawPrint, kickerPrint, pneuPrint;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2); //0x27 atau 0x3F
@@ -34,14 +34,7 @@ struct Data_Package {
   byte R1;
   byte R2;
   byte R3;
-  byte state1;
-  byte state2;
-  byte state3;
-  byte state4;
-  byte state5;
-  byte state6;
-  byte state7;
-  byte state8;
+  byte Step;
 };
 Data_Package data; //Create a variable with the above structure
 
@@ -56,7 +49,7 @@ void setup() {
   radio.setDataRate(RF24_250KBPS);
   radio.setPALevel(RF24_PA_MIN);
 
-  lcd.begin();   // iInit the LCD for 16 chars 2 lines
+  lcd.init();;   // iInit the LCD for 16 chars 2 lines
   lcd.backlight();   // Turn on the backligt (try lcd.noBaklight() to turn it off)
 
   data.LX = 128;
@@ -77,14 +70,7 @@ void setup() {
   data.R1 = 0;
   data.R2 = 0;
   data.R3 = 0;
-  data.state1 = 0;
-  data.state2 = 0;
-  data.state3 = 0;
-  data.state4 = 0;
-  data.state5 = 0;
-  data.state6 = 0;
-  data.state7 = 0;
-  data.state8 = 0;
+  data.Step = 1;
 }
 
 void loop() {
@@ -150,9 +136,15 @@ void loop() {
     Serial.println("R1");
   }
   
-  data.R2 = ps2x.Button(PSB_R2);
+  data.R2 = ps2x.ButtonPressed(PSB_R2);
   if (data.R2) {
     Serial.println("R2");
+    if (data.Step < 2) {
+      data.Step = data.Step + 1;
+    }
+    else {
+      data.Step = 1;
+    }
   }
   
   data.R3 = ps2x.Button(PSB_R3);
@@ -165,9 +157,15 @@ void loop() {
     Serial.println("L1");
   }
   
-  data.L2 = ps2x.Button(PSB_L2);
+  data.L2 = ps2x.ButtonPressed(PSB_L2);
   if (data.L2) {
     Serial.println("L2");
+    if (data.Step > 1) {
+      data.Step = data.Step - 1;
+    }
+    else {
+      data.Step = 2;
+    }
   }
   
   data.L3 = ps2x.Button(PSB_L3);
@@ -177,19 +175,11 @@ void loop() {
 
   radio.write(&data, sizeof(Data_Package));
 
-  lcd.setCursor(0, 0);
-  lcd.print("KRAI JATAYU 2021");
-
-  sprintf(printBawah, "%03d ", data.LX);
+  sprintf(printBawah, "%03d %03d %03d %03d", data.LX, data.LY, data.RX, data.RY);
   lcd.setCursor(0, 1);
   lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.LY);
-  lcd.setCursor(4, 1);
-  lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.RX);
-  lcd.setCursor(8, 1);
-  lcd.print(printBawah);
-  sprintf(printBawah, "%03d ", data.RY);
-  lcd.setCursor(12, 1);
-  lcd.print(printBawah);
+
+  lcd.setCursor(0, 0);
+  sprintf(printAtas, "JATAYU STEP = %d", data.Step);
+  lcd.print(printAtas);
 }

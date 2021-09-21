@@ -49,7 +49,8 @@ void setup() {
   radio.setDataRate(RF24_250KBPS);
   radio.setPALevel(RF24_PA_MIN);
 
-  lcd.begin();   // iInit the LCD for 16 chars 2 lines
+  //lcd.begin();   // iInit the LCD for 16 chars 2 lines
+  lcd.init();
   lcd.backlight();   // Turn on the backligt (try lcd.noBaklight() to turn it off)
 
   data.LX = 128;
@@ -140,7 +141,7 @@ void loop() {
   data.R2 = ps2x.ButtonPressed(PSB_R2);
   if (data.R2) {
     Serial.println("R2");
-    if (data.Step < 8) {
+    if (data.Step < 6) {
       data.Step = data.Step + 1;
     }
     else {
@@ -165,7 +166,7 @@ void loop() {
       data.Step = data.Step - 1;
     }
     else {
-      data.Step = 8;
+      data.Step = 6;
     }
   }
 
